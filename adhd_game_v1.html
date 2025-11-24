@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHD 专注规划器 v2.0</title>
+    <style>
+        :root {
+            --bg-color: #F4F7F6;
+            --text-color: #2C3E50;
+            --primary-action: #FF6B6B;
+            --focus-color: #1DD1A1;
+            --gold-color: #FDCB6E;
+            --card-bg: #FFFFFF;
+            --danger-color: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* --- 顶部导航栏 --- */
+        .header {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            box-sizing: border-box;
+        }
+
+        .coin-display {
+            font-weight: 800;
+            color: #E67E22;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .history-btn {
+            background: none;
+            border: 2px solid #EEE;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            transition: all 0.2s;
+        }
+        .history-btn:hover { background: #f0f0f0; color: #333; }
+
+        /* --- 主容器通用样式 --- */
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        h2 { margin-top: 0; color: var(--text-color); font-size: 1.5rem; }
+        
+        /* --- 输入框与控件 --- */
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #F0F0F0;
+            border-radius: 12px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus { border-color: var(--primary-action); outline: none; }
+
+        input[type="range"] { width: 100%; margin: 25px 0; cursor: pointer; }
+
+        /* --- 按钮 --- */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background-color: var(--primary-action);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-secondary { background-color: #95A5A6; }
+        .btn-finish { background-color: var(--focus-color); }
+        .btn-close { background: #eee; color: #666; margin-top: 10px; }
+
+        /* --- 专注倒计时 --- */
+        .timer-display {
+            font-size: 4.5rem;
+            font-weight: 800;
+            color: var(--focus-color);
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+        }
+
+        /* --- 历史记录列表 --- */
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+            text-align: left;
+            margin-top: 10px;
+        }
+        
+        .history-card {
+            background: #F8F9FA;
+            border-left: 5px solid #DDD;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        /* 完美完成的特殊样式 */
+        .history-card.perfect {
+            border-left-color: var(--gold-color);
+            background: #FEF9E7;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .history-meta {
+            font-size: 0.85rem;
+            color: #7F8C8D;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .coin-badge {
+            background: #FFEAA7;
+            color: #D35400;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .empty-state { color: #999; margin: 30px 0; font-style: italic; }
+
+        /* --- 工具类 --- */
+        .hidden { display: none !important; }
+        
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        .pop-anim { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button class="history-btn" onclick="toggleHistory()">📜 历史记录</button>
+        <div class="coin-display">
+            <span>💰</span>
+            <span id="totalCoins">0</span>
+        </div>
+    </div>
+
+    <div id="setupPhase" class="container">
+        <h2>🚀 开启新任务</h2>
+        <input type="text" id="taskName" placeholder="任务名称（例如：背单词 50 个）" autocomplete="off" />
+        <input type="number" id="taskTime" placeholder="预计时长（分钟）" min="1" max="180" />
+        <button class="btn" onclick="startFocus()">开始专注</button>
+    </div>
+
+    <div id="focusPhase" class="container hidden">
+        <h3 id="currentTaskLabel" style="color:#7F8C8D; font-weight:normal;">任务进行中...</h3>
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div style="margin-bottom:20px; color:#BDC3C7; font-size:0.9rem;">保持专注，拒绝干扰</div>
+        <button class="btn btn-finish" onclick="finishEarly()">✅ 完成任务</button>
+        <button class="btn btn-secondary" onclick="giveUp()">🏳️ 放弃</button>
+    </div>
+
+    <div id="feedbackPhase" class="container hidden">
+        <h2>📊 成果评估</h2>
+        <p style="color:#7F8C8D; margin-bottom: 5px;">实际专注时长</p>
+        <div style="font-size: 2rem; font-weight:bold; color:var(--text-color); margin-bottom:20px;">
+            <span id="actualTimeDisplay">0</span> <span style="font-size:1rem;">分钟</span>
+        </div>
+        
+        <label>任务完成度: <span id="rangeValue" style="color:var(--primary-action); font-weight:bold; font-size:1.2rem;">50%</span></label>
+        <input type="range" id="completionRate" min="0" max="100" value="50" oninput="updateRangeDisplay()">
+        
+        <div style="background: #FEF9E7; padding: 15px; border-radius: 12px; margin-top:15px; border: 1px solid #F1C40F;">
+            <div style="color:#7F8C8D; font-size:0.9rem;">本次奖励</div>
+            <div style="font-size:1.5rem; font-weight:bold; color:#E67E22;">+ <span id="predictedCoins">0</span> 💰</div>
+        </div>
+
+        <button class="btn" onclick="claimReward()">收入囊中</button>
+    </div>
+
+    <div id="historyPhase" class="container hidden">
+        <h2>🏆 历史成就</h2>
+        <div id="historyListContainer" class="history-list">
+            </div>
+        <button class="btn btn-close" onclick="toggleHistory()">关闭</button>
+    </div>
+
+    <script>
+        // --- 全局变量 ---
+        let totalCoins = 0;
+        let taskHistory = []; // 存储历史任务对象
+        
+        // 计时器相关
+        let timerInterval;
+        let plannedTimeMin = 0;
+        let startTime = 0;
+        let actualTimeMin = 0;
+
+        // --- 初始化 ---
+        window.onload = function() {
+            // 读取金币
+            const savedCoins = localStorage.getItem('adhd_coins');
+            if (savedCoins) totalCoins = parseInt(savedCoins);
+            
+            // 读取历史记录
+            const savedHistory = localStorage.getItem('adhd_task_history');
+            if (savedHistory) {
+                try {
+                    taskHistory = JSON.parse(savedHistory);
+                } catch(e) {
+                    console.error("历史记录解析失败", e);
+                    taskHistory = [];
+                }
+            }
+            
+            updateCoinDisplay();
+        };
+
+        // --- 核心流程函数 ---
+
+        function startFocus() {
+            const nameInput = document.getElementById('taskName');
+            const timeInput = document.getElementById('taskTime');
+            
+            const name = nameInput.value.trim();
+            const time = parseInt(timeInput.value);
+
+            if (!name) return alert("写个任务名吧，哪怕很简单！");
+            if (!time || time <= 0) return alert("时间要设置得合理哦（至少1分钟）");
+
+            plannedTimeMin = time;
+            let remainingSeconds = plannedTimeMin * 60;
+            
+            showSection('focusPhase');
+            document.getElementById('currentTaskLabel').innerText = name;
+            
+            startTime = Date.now();
+            updateTimerDisplay(remainingSeconds);
+
+            // 计时逻辑
+            timerInterval = setInterval(() => {
+                remainingSeconds--;
+                updateTimerDisplay(remainingSeconds);
+                if (remainingSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    finishEarly(); 
+                }
+            }, 1000);
+        }
+
+        function finishEarly() {
+            clearInterval(timerInterval);
+            const elapsedSeconds = (Date.now() - startTime) / 1000;
+            actualTimeMin = Math.ceil(elapsedSeconds / 60);
+            if (actualTimeMin < 1) actualTimeMin = 1; // 至少算1分钟
+
+            document.getElementById('actualTimeDisplay').innerText = actualTimeMin;
+            
+            // 重置滑块为高频默认值 (ADHD通常要么做完要么没做，设为80引导积极性)
+            document.getElementById('completionRate').value = 100; 
+            updateRangeDisplay();
+            
+            showSection('feedbackPhase');
+        }
+
+        function giveUp() {
+            if(confirm("确定要放弃吗？这次的专注将不会被记录。")) {
+                clearInterval(timerInterval);
+                document.getElementById('taskName').value = ''; 
+                showSection('setupPhase');
+            }
+        }
+
+        function claimReward() {
+            const reward = calculateRewardValue();
+            const taskName = document.getElementById('taskName').value;
+            const completion = parseInt(document.getElementById('completionRate').value);
+
+            // 1. 更新金币
+            totalCoins += reward;
+            localStorage.setItem('adhd_coins', totalCoins);
+            updateCoinDisplay();
+
+            // 2. 记录到历史
+            const record = {
+                id: Date.now(),
+                name: taskName,
+                duration: actualTimeMin,
+                planDuration: plannedTimeMin,
+                completion: completion,
+                coins: reward,
+                date: new Date().toLocaleString()
+            };
+            
+            // 新记录插到最前面
+            taskHistory.unshift(record);
+            // 限制保存最近50条，防止存储溢出
+            if(taskHistory.length > 50) taskHistory.pop();
+            
+            localStorage.setItem('adhd_task_history', JSON.stringify(taskHistory));
+
+            alert(`太棒了！收入 ${reward} 金币！`);
+            
+            // 3. 清理并返回
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskTime').value = '';
+            showSection('setupPhase');
+        }
+
+        // --- 辅助逻辑 ---
+
+        function updateTimerDisplay(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            document.getElementById('timerDisplay').innerText = `${m}:${s}`;
+        }
+
+        function updateRangeDisplay() {
+            const val = document.getElementById('completionRate').value;
+            document.getElementById('rangeValue').innerText = val + "%";
+            
+            // 动态改变颜色反馈
+            const label = document.getElementById('rangeValue');
+            if(val == 100) label.style.color = "#27ae60";
+            else if(val < 50) label.style.color = "#e74c3c";
+            else label.style.color = "var(--primary-action)";
+
+            document.getElementById('predictedCoins').innerText = calculateRewardValue();
+        }
+
+        function calculateRewardValue() {
+            const completion = parseInt(document.getElementById('completionRate').value);
+            const c_factor = completion / 100;
+            const baseRate = 10;
+            
+            let reward = (actualTimeMin * baseRate) * Math.pow(c_factor, 2);
+            
+            // 早鸟奖励逻辑
+            if (completion === 100 && actualTimeMin < plannedTimeMin) {
+                reward += (plannedTimeMin - actualTimeMin) * 5;
+            }
+            return Math.floor(reward);
+        }
+
+        function updateCoinDisplay() {
+            const el = document.getElementById('totalCoins');
+            el.innerText = totalCoins;
+            el.classList.remove('pop-anim');
+            void el.offsetWidth; 
+            el.classList.add('pop-anim');
+        }
+
+        // --- 视图管理 ---
+
+        function showSection(id) {
+            // 隐藏所有主要容器
+            ['setupPhase', 'focusPhase', 'feedbackPhase', 'historyPhase'].forEach(pid => {
+                document.getElementById(pid).classList.add('hidden');
+            });
+            // 显示目标容器
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function toggleHistory() {
+            const historyDiv = document.getElementById('historyPhase');
+            const setupDiv = document.getElementById('setupPhase');
+            
+            if (historyDiv.classList.contains('hidden')) {
+                // 打开历史记录：渲染列表，隐藏当前的设定界面
+                renderHistoryList();
+                showSection('historyPhase');
+            } else {
+                // 关闭历史记录：回到设定界面
+                showSection('setupPhase');
+            }
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('historyListContainer');
+            container.innerHTML = ''; // 清空现有内容
+
+            if (taskHistory.length === 0) {
+                container.innerHTML = '<div class="empty-state">还没有任务记录，快去完成第一个任务吧！</div>';
+                return;
+            }
+
+            taskHistory.forEach(task => {
+                const isPerfect = task.completion === 100;
+                // 创建卡片 HTML
+                const card = document.createElement('div');
+                card.className = `history-card ${isPerfect ? 'perfect' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="history-header">
+                        <span>${task.name}</span>
+                        <span class="coin-badge">+${task.coins} 💰</span>
+                    </div>
+                    <div class="history-meta">
+                        <span>⏱️ ${task.duration}分钟 / 📅 ${task.completion}% 完成</span>
+                        <span style="font-size:0.75rem">${task.date.split(' ')[0]}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>

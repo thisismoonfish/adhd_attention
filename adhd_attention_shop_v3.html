@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHD 专注规划器 v3.0 (商店版)</title>
+    <style>
+        :root {
+            --bg-color: #F4F7F6;
+            --text-color: #2C3E50;
+            --primary-action: #FF6B6B;
+            --focus-color: #1DD1A1;
+            --gold-color: #FDCB6E;
+            --card-bg: #FFFFFF;
+            --danger-color: #e74c3c;
+            --shop-card-bg: #FFF8E1;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* --- 顶部导航栏 --- */
+        .header {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            box-sizing: border-box;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+        }
+
+        .coin-display {
+            font-weight: 800;
+            color: #E67E22;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .nav-btn {
+            background: none;
+            border: 2px solid #EEE;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            transition: all 0.2s;
+            margin-right: 5px;
+        }
+        .nav-btn:hover, .nav-btn.active { background: #f0f0f0; color: #333; border-color: #ccc; }
+
+        /* --- 主容器 --- */
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            margin-bottom: 50px;
+        }
+
+        h2 { margin-top: 0; color: var(--text-color); font-size: 1.5rem; }
+        
+        /* --- 输入框与控件 --- */
+        input[type="text"], input[type="number"], input[type="url"] {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #F0F0F0;
+            border-radius: 12px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus { border-color: var(--primary-action); outline: none; }
+        input[type="range"] { width: 100%; margin: 25px 0; cursor: pointer; }
+
+        /* --- 按钮 --- */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background-color: var(--primary-action);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-secondary { background-color: #95A5A6; }
+        .btn-finish { background-color: var(--focus-color); }
+        .btn-close { background: #eee; color: #666; margin-top: 10px; }
+
+        /* --- 商店网格布局 --- */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .shop-item {
+            background: #FAFAFA;
+            border: 2px solid #EEE;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .shop-item:hover {
+            border-color: var(--gold-color);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(253, 203, 110, 0.2);
+        }
+
+        .shop-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .shop-icon img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .shop-name { font-weight: bold; font-size: 0.95rem; margin-bottom: 5px; color: #34495e; }
+        .shop-price { color: #E67E22; font-weight: 800; font-size: 0.9rem; }
+        
+        .delete-item-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: none;
+            border: none;
+            color: #ccc;
+            font-size: 1.2rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .delete-item-btn:hover { color: var(--danger-color); }
+
+        /* --- 倒计时与历史记录样式 --- */
+        .timer-display {
+            font-size: 4.5rem;
+            font-weight: 800;
+            color: var(--focus-color);
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+        }
+        .history-list { max-height: 400px; overflow-y: auto; text-align: left; }
+        .history-card {
+            background: #F8F9FA;
+            border-left: 5px solid #DDD;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+        }
+        .history-card.perfect { border-left-color: var(--gold-color); background: #FEF9E7; }
+        .hidden { display: none !important; }
+        
+        /* 动画 */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        .shake-anim { animation: shake 0.3s; }
+        
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        .pop-anim { animation: pop 0.4s; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <button class="nav-btn" onclick="toggleView('setupPhase')">🏠 专注</button>
+            <button class="nav-btn" onclick="toggleView('shopPhase')">🛒 商店</button>
+            <button class="nav-btn" onclick="toggleView('historyPhase')">📜 历史</button>
+        </div>
+        <div class="coin-display">
+            <span>💰</span>
+            <span id="totalCoins">0</span>
+        </div>
+    </div>
+
+    <div id="setupPhase" class="container">
+        <h2>🚀 开启新任务</h2>
+        <input type="text" id="taskName" placeholder="任务名称（例如：阅读 20 页）" autocomplete="off" />
+        <input type="number" id="taskTime" placeholder="预计时长（分钟）" min="1" max="180" />
+        <button class="btn" onclick="startFocus()">开始专注</button>
+    </div>
+
+    <div id="focusPhase" class="container hidden">
+        <h3 id="currentTaskLabel" style="color:#7F8C8D; font-weight:normal;">任务进行中...</h3>
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div style="margin-bottom:20px; color:#BDC3C7;">保持专注，拒绝干扰</div>
+        <button class="btn btn-finish" onclick="finishTask(false)">✅ 完成任务</button>
+        <button class="btn btn-secondary" onclick="giveUp()">🏳️ 放弃</button>
+    </div>
+
+    <div id="feedbackPhase" class="container hidden">
+        <h2>📊 成果评估</h2>
+        <p id="finishStatusLabel" style="color:#E67E22; font-weight:bold;">任务结束</p>
+        
+        <label>完成度: <span id="rangeValue" style="color:var(--primary-action); font-weight:bold;">100%</span></label>
+        <input type="range" id="completionRate" min="0" max="100" value="100" oninput="updateRangeDisplay()">
+        
+        <div style="background: #FEF9E7; padding: 15px; border-radius: 12px; margin-top:15px; border: 1px solid #F1C40F;">
+            <div style="color:#7F8C8D;">本次奖励</div>
+            <div style="font-size:1.5rem; font-weight:bold; color:#E67E22;">+ <span id="predictedCoins">0</span> 💰</div>
+        </div>
+
+        <button class="btn" onclick="claimReward()">收入囊中</button>
+    </div>
+
+    <div id="historyPhase" class="container hidden">
+        <h2>🏆 历史成就</h2>
+        <div id="historyListContainer" class="history-list"></div>
+    </div>
+
+    <div id="shopPhase" class="container hidden">
+        <h2>🛍️ 解压杂货铺</h2>
+        <p style="color:#7f8c8d; font-size:0.9rem;">用你的专注力换取快乐</p>
+        
+        <div id="shopGrid" class="shop-grid">
+            </div>
+
+        <button class="btn btn-secondary" style="margin-top:20px;" onclick="showAddProductModal()">+ 自定义上架商品</button>
+    </div>
+
+    <div id="addProductModal" class="container hidden" style="position:fixed; top:20%; left:50%; transform:translateX(-50%); z-index:200; border: 2px solid var(--primary-action);">
+        <h3>✨ 上架新商品</h3>
+        <input type="text" id="newProdName" placeholder="商品名称 (如: 买盲盒)" />
+        <input type="number" id="newProdPrice" placeholder="价格 (1元 ≈ 50金币)" />
+        <input type="text" id="newProdIcon" placeholder="图标 (输入Emoji 或 图片URL)" />
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-secondary" onclick="closeAddProductModal()">取消</button>
+            <button class="btn" onclick="addNewProduct()">上架</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 全局数据与配置 ---
+        let totalCoins = 0;
+        let taskHistory = [];
+        let shopItems = [];
+        
+        // 默认商品列表 (如果本地没有数据时使用)
+        const defaultShopItems = [
+            { id: 1, name: "摸鱼20分钟", price: 200, icon: "🧘" },
+            { id: 2, name: "看一集动漫", price: 500, icon: "📺" },
+            { id: 3, name: "一杯奶茶", price: 1000, icon: "🧋" },
+            { id: 4, name: "买本书", price: 2000, icon: "📚" },
+            { id: 5, name: "专辑/CD基金", price: 500, icon: "💿" },
+            { id: 6, name: "Steam游戏", price: 3000, icon: "🎮" }
+        ];
+
+        // 计时器相关
+        let timerInterval;
+        let endTime = 0; 
+        let plannedTimeMin = 0;
+        let actualTimeMin = 0;
+        let isTimeUp = false; 
+
+        // --- 初始化 ---
+        window.onload = function() {
+            // 1. 读取金币
+            const savedCoins = localStorage.getItem('adhd_coins');
+            if (savedCoins) totalCoins = parseInt(savedCoins);
+            updateCoinDisplay();
+
+            // 2. 读取历史
+            const savedHistory = localStorage.getItem('adhd_task_history');
+            if (savedHistory) taskHistory = JSON.parse(savedHistory);
+
+            // 3. 读取商店商品
+            const savedItems = localStorage.getItem('adhd_shop_items');
+            if (savedItems) {
+                shopItems = JSON.parse(savedItems);
+            } else {
+                shopItems = defaultShopItems; // 初始化默认商品
+                saveShopItems();
+            }
+        };
+
+        // --- 视图切换 ---
+        function toggleView(viewId) {
+            // 隐藏所有主要容器 (Modal除外)
+            ['setupPhase', 'focusPhase', 'feedbackPhase', 'historyPhase', 'shopPhase'].forEach(pid => {
+                document.getElementById(pid).classList.add('hidden');
+            });
+            
+            // 逻辑处理
+            if (viewId === 'historyPhase') renderHistoryList();
+            if (viewId === 'shopPhase') renderShop();
+            
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        // --- 专注逻辑 (复用之前稳定版) ---
+        function startFocus() {
+            const name = document.getElementById('taskName').value.trim();
+            const time = parseInt(document.getElementById('taskTime').value);
+
+            if (!name || !time) return alert("请填写任务和时间");
+            
+            plannedTimeMin = time;
+            isTimeUp = false;
+            
+            toggleView('focusPhase');
+            document.getElementById('currentTaskLabel').innerText = name;
+            
+            endTime = Date.now() + (plannedTimeMin * 60 * 1000);
+            updateTimerDisplay();
+
+            timerInterval = setInterval(() => {
+                const remaining = updateTimerDisplay();
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    finishTask(true);
+                }
+            }, 1000);
+        }
+
+        function finishTask(autoFinished) {
+            clearInterval(timerInterval);
+            isTimeUp = autoFinished;
+            
+            if (autoFinished) {
+                actualTimeMin = plannedTimeMin;
+                document.getElementById('finishStatusLabel').innerText = `时间到 (${actualTimeMin}分钟)`;
+            } else {
+                const now = Date.now();
+                const msPassed = (plannedTimeMin * 60 * 1000) - (endTime - now);
+                actualTimeMin = Math.ceil(msPassed / 1000 / 60);
+                if (actualTimeMin < 1) actualTimeMin = 1;
+                document.getElementById('finishStatusLabel').innerText = `提前完成 (${actualTimeMin}分钟)`;
+            }
+            
+            document.getElementById('completionRate').value = 100;
+            updateRangeDisplay();
+            toggleView('feedbackPhase');
+        }
+
+        function giveUp() {
+            if(confirm("确定放弃吗？")) {
+                clearInterval(timerInterval);
+                toggleView('setupPhase');
+            }
+        }
+
+        // --- 结算系统 ---
+        function updateRangeDisplay() {
+            const val = document.getElementById('completionRate').value;
+            const el = document.getElementById('rangeValue');
+            el.innerText = val + "%";
+            el.style.color = val == 100 ? "#27ae60" : (val < 50 ? "#e74c3c" : "#FF6B6B");
+            document.getElementById('predictedCoins').innerText = calculateReward();
+        }
+
+        function calculateReward() {
+            const completion = parseInt(document.getElementById('completionRate').value) / 100;
+            let reward = (actualTimeMin * 10) * Math.pow(completion, 2);
+            
+            if (!isTimeUp && completion === 1 && actualTimeMin < plannedTimeMin) {
+                reward += (plannedTimeMin - actualTimeMin) * 5;
+            }
+            return Math.floor(reward);
+        }
+
+        function claimReward() {
+            const reward = calculateReward();
+            totalCoins += reward;
+            saveCoins();
+            
+            // 记录历史
+            taskHistory.unshift({
+                name: document.getElementById('taskName').value,
+                coins: reward,
+                date: new Date().toLocaleDateString(),
+                duration: actualTimeMin,
+                completion: document.getElementById('completionRate').value
+            });
+            localStorage.setItem('adhd_task_history', JSON.stringify(taskHistory));
+
+            alert(`获得 ${reward} 金币！`);
+            document.getElementById('taskName').value = '';
+            toggleView('setupPhase');
+        }
+
+        // --- 商店系统逻辑 (新增核心) ---
+        
+        function renderShop() {
+            const grid = document.getElementById('shopGrid');
+            grid.innerHTML = '';
+
+            shopItems.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'shop-item';
+                
+                // 判断图标是 emoji 还是 图片URL
+                let iconHtml = '';
+                if (item.icon.match(/\.(jpeg|jpg|gif|png)$/) != null || item.icon.includes('http')) {
+                     iconHtml = `<img src="${item.icon}" onerror="this.src='🎁'">`;
+                } else {
+                     iconHtml = item.icon; // Emoji
+                }
+
+                el.innerHTML = `
+                    <button class="delete-item-btn" onclick="deleteProduct(${index}, event)">×</button>
+                    <div class="shop-icon">${iconHtml}</div>
+                    <div class="shop-name">${item.name}</div>
+                    <div class="shop-price">${item.price} 💰</div>
+                `;
+                
+                el.onclick = (e) => {
+                    if(e.target.classList.contains('delete-item-btn')) return;
+                    buyItem(item);
+                };
+                
+                grid.appendChild(el);
+            });
+        }
+
+        function buyItem(item) {
+            if (totalCoins >= item.price) {
+                if(confirm(`确定花费 ${item.price} 金币兑换 "${item.name}" 吗？`)) {
+                    totalCoins -= item.price;
+                    saveCoins();
+                    alert(`兑换成功！享受你的 "${item.name}" 吧！🎉`);
+                }
+            } else {
+                // 钱不够的动画反馈
+                const coinEl = document.querySelector('.coin-display');
+                coinEl.classList.add('shake-anim');
+                setTimeout(() => coinEl.classList.remove('shake-anim'), 300);
+                alert(`金币不足！还差 ${item.price - totalCoins} 金币，快去专注一会吧！`);
+            }
+        }
+
+        // 自定义商品相关
+        function showAddProductModal() {
+            document.getElementById('addProductModal').classList.remove('hidden');
+        }
+        function closeAddProductModal() {
+            document.getElementById('addProductModal').classList.add('hidden');
+        }
+
+        function addNewProduct() {
+            const name = document.getElementById('newProdName').value;
+            const price = parseInt(document.getElementById('newProdPrice').value);
+            let icon = document.getElementById('newProdIcon').value;
+
+            if(!name || !price) return alert("请填写名称和价格");
+            if(!icon) icon = "🎁"; // 默认图标
+
+            shopItems.push({ name, price, icon });
+            saveShopItems();
+            
+            // 重置并关闭
+            document.getElementById('newProdName').value = '';
+            document.getElementById('newProdPrice').value = '';
+            document.getElementById('newProdIcon').value = '';
+            closeAddProductModal();
+            renderShop();
+        }
+
+        function deleteProduct(index, event) {
+            event.stopPropagation();
+            if(confirm("确定下架这个商品吗？")) {
+                shopItems.splice(index, 1);
+                saveShopItems();
+                renderShop();
+            }
+        }
+
+        function saveShopItems() {
+            localStorage.setItem('adhd_shop_items', JSON.stringify(shopItems));
+        }
+
+        // --- 通用辅助 ---
+        function updateTimerDisplay() {
+            const now = Date.now();
+            let remaining = Math.ceil((endTime - now) / 1000);
+            if (remaining < 0) remaining = 0;
+
+            const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+            const s = (remaining % 60).toString().padStart(2, '0');
+            document.getElementById('timerDisplay').innerText = `${m}:${s}`;
+            return remaining;
+        }
+
+        function saveCoins() {
+            localStorage.setItem('adhd_coins', totalCoins);
+            updateCoinDisplay();
+        }
+
+        function updateCoinDisplay() {
+            const el = document.getElementById('totalCoins');
+            el.innerText = totalCoins;
+            el.classList.remove('pop-anim');
+            void el.offsetWidth; 
+            el.classList.add('pop-anim');
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('historyListContainer');
+            container.innerHTML = '';
+            if (taskHistory.length === 0) {
+                container.innerHTML = '<div style="color:#999;font-style:italic">暂无记录</div>';
+                return;
+            }
+            taskHistory.forEach(task => {
+                const div = document.createElement('div');
+                div.className = `history-card ${task.completion == 100 ? 'perfect' : ''}`;
+                div.innerHTML = `<div><strong>${task.name}</strong></div><div style="font-size:0.8rem;color:#666">${task.date} | +${task.coins}💰</div>`;
+                container.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
